@@ -1,9 +1,4 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Dec  1 20:35:44 2022
-
-@author: kaile
-"""
 
 import pandas as pd
 import numpy as np
@@ -22,9 +17,14 @@ def last_trade_date(today = datetime.datetime.today()): #获取最后一个交�
     # the input is a datetime
     today = today.strftime('%Y%m%d')
     # inefficient but acceptable
-    last_day = trade_days[trade_days < int(today)].max()
+    last_day = trade_days[np.searchsorted(trade_days, today, side = 'right')-1]
     return str(last_day)
 
+def next_trade_date(today):
+    today = today.strftime('%Y%m%d')
+    ans = trade_days[np.searchsorted(trade_days, today, side = 'right')]
+    return str(ans)
+    
 df = pro.stock_basic(market = '主板, 中小板, 创业板')
 
 def timefromstr(s):
