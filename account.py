@@ -2,15 +2,40 @@
 import datetime
 import math
 import pandas as pd
-from . import FunctionsLib
+import FunctionsLib
 class account(object):
-    # data is historical stock data whose index is dates
-    data = pd.DataFrame({})
+    # data is a dictionary of dataframes whose indices are dates, 
+    # keys are the stock IDs.
     def __init__(self, capital = 1000000):
         self.capital = capital
         self.holdings = dict()
         self.date = datetime.datetime(1900,1,1)
-        
+        self.order_history = list()
+        self.data = dict()
+        self.commission = 0
+    
+    def set_commission(self, x):
+        self.commission = x
+    
+    def load_data(self,df,col):
+        '''
+        loads data into the account
+
+        Parameters
+        ----------
+        df : DataFrame
+            the processed data.
+        col : str
+            the column of stock IDs in df.
+
+        Returns
+        -------
+        None.
+
+        '''
+        for stock in df[col]:
+            self.data[stock] = df[df[col] == stock].drop(col,axis = 1)
+    
     def order(self, stock, amount):
         '''
         Buy or sell a certain stock with this account
@@ -30,20 +55,26 @@ class account(object):
         
         '''
         #get the price of the stock, can be improved to be more efficient
-        price = self.data[self.data['stock_ID'] == stock].loc[self.date]
+        price = self.data[stock].loc[self.date]
         # if we don't have enough money, then buy the largest amount we can
         if price * amount > self.capital:
-            amount = math.floor(self.capital/price)
+            amount = math.floor(self.capital/price/100)*100
         
         if stock in self.holdings.keys():
             # if we are selling more than we have, we will sell all of them
             if amount + self.holdings[stock]<0:
-                amount = - self.holdings[stock]
+                amount = -self.holdings[stock]
             self.holdings[stock] = self.holdings[stock] + amount
+            if self.holdings[stock] == 0:
+                self.holdings.pop(stock)
         else:
             self.holdings[stock] = amount
             
-        self.capital = self.capital - price*amount
+        self.order_history.append({'date': self.date,
+                                   'stock_ID': stock,
+                                   'amount': amount,
+                                   'price': price})
+        self.capital = self.capital - price*amount - price*abs(amount)*self.commission
         
     def order_to(self, stock, amount):
         '''
