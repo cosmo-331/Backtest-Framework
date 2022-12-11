@@ -37,9 +37,12 @@ def run(account, preprocess, loop, start_date, end_date):
     '''
     preprocess(account)
     account.date = start_date
+    # execute the loop function every trade day
     while(account.date<end_date):
         loop(account)
+        # ask account to record today's change in capital
         account.update_value_history()
+        # update the current date after running
         account.date = FL.timefromstr(FL.next_trade_date(account.date))
     account.plot_history()
 
@@ -118,6 +121,7 @@ def handle_data(account):
             account.order(stock, 100000)
         if(MA5_before>MA20_before) & (MA5_now<MA20_now):
             account.order_to(stock,0)
+            
 if __name__ == '__main__':
     backtest = Account()
     run(account = backtest, 
