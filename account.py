@@ -8,7 +8,7 @@ class Account(object):
     # data is a dictionary of dataframes whose indices are dates, 
     # keys are the stock IDs.
     def __init__(self):
-        self.capital = 1000000
+        self.cash = 1000000
         self.holdings = dict()
         self.date = datetime.datetime(1900,1,1)
         self.order_history = list()
@@ -17,8 +17,8 @@ class Account(object):
         self.stock_col = 'stock_ID'
         self.value_history = [[],[]]
     
-    def set_capital(self, x):
-        self.capital = x
+    def set_cash(self, x):
+        self.cash = x
     
     def set_commission(self, x):
         self.commission = x
@@ -65,8 +65,8 @@ class Account(object):
         #get the price of the stock, can be improved to be more efficient
         price = self.data[stock]['close'].loc[self.date]
         # if we don't have enough money, then buy the largest amount we can
-        if price * amount + price*abs(amount)*self.commission > self.capital:
-            amount = math.floor(self.capital/price/100)*100
+        if price * amount + price*abs(amount)*self.commission > self.cash:
+            amount = math.floor(self.cash/price/100)*100
         
         if stock in self.holdings.keys():
             # if we are selling more than we have, we will sell all of them
@@ -82,7 +82,7 @@ class Account(object):
                                    'stock_ID': stock,
                                    'amount': amount,
                                    'price': price})
-        self.capital = self.capital - price*amount - price*abs(amount)*self.commission
+        self.cash = self.cash - price*amount - price*abs(amount)*self.commission
         
     def order_to(self, stock, amount):
         '''
@@ -163,15 +163,15 @@ class Account(object):
     
     def get_total_value(self):
         '''
-        get the value of the account
+        get the total capital of the account
 
         Returns
         -------
         ans : int
-            the total value of the account.
+            the total capital of the account.
 
         '''
-        ans = self.capital
+        ans = self.cash
         for stock in self.holdings.keys():
             price = self.data[stock]['close'].loc[self.date]
             ans = ans + price*self.holdings[stock]
@@ -192,7 +192,7 @@ class Account(object):
         
     def plot_history(self):
         '''
-        Plot the total value of our trading account over time
+        Plot the total capital of our trading account over time
 
         Returns
         -------
@@ -201,7 +201,7 @@ class Account(object):
         '''
         plt.plot(self.value_history[0], self.value_history[1])
         plt.xlabel('time')
-        plt.ylabel('total_value')
+        plt.ylabel('total_capital')
         plt.title('Earnings over time')
         
         
