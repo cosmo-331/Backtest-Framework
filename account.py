@@ -3,16 +3,22 @@ import datetime
 import math
 import pandas as pd
 import FunctionsLib
-class account(object):
+import matplotlib.pyplot as plt
+class Account(object):
     # data is a dictionary of dataframes whose indices are dates, 
     # keys are the stock IDs.
-    def __init__(self, capital = 1000000):
-        self.capital = capital
+    def __init__(self):
+        self.capital = 1000000
         self.holdings = dict()
         self.date = datetime.datetime(1900,1,1)
         self.order_history = list()
         self.data = dict()
-        self.commission = 0
+        self.commission = 0.002
+        self.stock_col = 'stock_ID'
+        self.value_history = [[],[]]
+    
+    def set_capital(self, x):
+        self.capital = x
     
     def set_commission(self, x):
         self.commission = x
@@ -33,8 +39,10 @@ class account(object):
         None.
 
         '''
+        self.data = dict()
         for stock in df[col]:
-            self.data[stock] = df[df[col] == stock].drop(col,axis = 1)
+            self.data[stock] = df[df[col] == stock]
+        self.stock_col = col
     
     def order(self, stock, amount):
         '''
@@ -55,9 +63,9 @@ class account(object):
         
         '''
         #get the price of the stock, can be improved to be more efficient
-        price = self.data[stock].loc[self.date]
+        price = self.data[stock]['close'].loc[self.date]
         # if we don't have enough money, then buy the largest amount we can
-        if price * amount > self.capital:
+        if price * amount + price*abs(amount)*self.commission > self.capital:
             amount = math.floor(self.capital/price/100)*100
         
         if stock in self.holdings.keys():
@@ -92,15 +100,20 @@ class account(object):
         None.
 
         '''
-        self.order(stock, amount - self.holdings[stock])
+        if stock in self.holdings.keys():
+            self.order(stock, amount - self.holdings[stock])
+        else:
+            self.order(stock, amount)
             
-    def get_history(self, attributes, start_date, end_date):
+    def get_history(self, stock_ID, attributes, start_date, end_date):
         '''
-        get the data during some period in the past (between start_date and 
-        end_date, inclusive)
+        get the data of one stock during some period in the past (between 
+        start_date and end_date, inclusive)
         
         Parameters
         ----------
+        stock_ID: str or list
+            the stock code of desired(can be multiple stocks)
         attributes : list
             a list of strings containing the columns wanted.
         start_date : datetime
@@ -112,12 +125,84 @@ class account(object):
         Returns
         -------
         pandas DataFrame
-            a pandas dataframe containing the attributes columns 
+            a pandas dataframe containing relevant data of the stock
             between start_date and end_date.
 
         '''
         # if the period is not in the past, then make end_date the previous day
-        previous_day = FunctionsLib.last_trade_date(self.date)
+        previous_day = FunctionsLib.timefromstr(FunctionsLib.last_trade_date(self.date))
+        if self.stock_col not in attributes:
+            attributes.append(self.stock_col)
         if end_date > previous_day:
             end_date = previous_day
-        return self.data[attributes].loc[start_date:end_date]
+        if type(stock_ID) == str:
+            return self.data[stock_ID][attributes].loc[start_date:end_date+datetime.timedelta(days = 1)]
+        if type(stock_ID) == list:
+            ans = self.data[stock_ID[0]][attributes].loc[start_date:end_date+datetime.timedelta(days = 1)]
+            for i in range(1,len(stock_ID)):
+                ans = pd.concat([ans, self.data[stock_ID[i]][attributes].loc[start_date: end_date+datetime.timedelta(days = 1)]])
+            return ans
+    def get_MA(self, days):
+        '''
+        add a moving average to the data
+
+        Parameters
+        ----------
+        days : int
+            number of days of the moving average.
+
+        Returns
+        -------
+        None.
+
+        '''
+        col = 'MA'+str(days)
+        if col not in self.data[list(self.data.keys())[0]].columns:
+            for stock in self.data.keys():
+                self.data[stock][col] = self.data[stock]['close'].rolling(days).mean()
+    
+    def get_total_value(self):
+        '''
+        get the value of the account
+
+        Returns
+        -------
+        ans : int
+            the total value of the account.
+
+        '''
+        ans = self.capital
+        for stock in self.holdings.keys():
+            price = self.data[stock]['close'].loc[self.date]
+            ans = ans + price*self.holdings[stock]
+        return ans
+    
+    def update_value_history(self):
+        '''
+        ask the account to update its value_history
+
+        Returns
+        -------
+        None.
+
+        '''
+        ans = self.get_total_value()
+        self.value_history[0].append(self.date)
+        self.value_history[1].append(ans)
+        
+    def plot_history(self):
+        '''
+        Plot the total value of our trading account over time
+
+        Returns
+        -------
+        None.
+
+        '''
+        plt.plot(self.value_history[0], self.value_history[1])
+        plt.xlabel('time')
+        plt.ylabel('total_value')
+        plt.title('Earnings over time')
+        
+        
+        
