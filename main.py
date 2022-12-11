@@ -118,10 +118,10 @@ def handle_data(account):
             account.order(stock, 100000)
         if(MA5_before>MA20_before) & (MA5_now<MA20_now):
             account.order_to(stock,0)
-
-backtest = Account()
-run(account = backtest, 
-    preprocess = init, 
-    loop = handle_data, 
-    start_date = datetime(2018,12,11),
-    end_date = datetime(2022,3,1))
+if __name__ == '__main__':
+    backtest = Account()
+    run(account = backtest, 
+        preprocess = init, 
+        loop = handle_data, 
+        start_date = datetime(2018,12,11),
+        end_date = datetime(2022,3,1))
