@@ -16,21 +16,59 @@ pro = ts.pro_api()
 
 cal = pro.query('trade_cal', start_date = '20000101', end_date = '20241231', is_open = '1')
 trade_days = np.array(cal['cal_date'].apply(int).tolist())
-def last_trade_date(today = datetime.datetime.today()): #获取最后一个交易日日期
-    # the input is a datetime
+def last_trade_date(today = datetime.datetime.today()):
+    '''
+    get the latest trade date x such that x <= today
+
+    Parameters
+    ----------
+    today : datetime
+        the desired date for the query. The default is datetime.datetime.today().
+
+    Returns
+    -------
+    str
+        that trade date we got.
+
+    '''
     today = today.strftime('%Y%m%d')
-    # inefficient but acceptable
     last_day = trade_days[np.searchsorted(trade_days, today, side = 'right')-1]
     return str(last_day)
 
 def previous_trade_date(today):
-    # the input is a datetime
+    '''
+    get the latest trade date x such that x < today
+
+    Parameters
+    ----------
+    today : datetime
+        the desired date for the query.
+
+    Returns
+    -------
+    str
+        that trade date we got.
+
+    '''
     today = today.strftime('%Y%m%d')
     ans = trade_days[np.searchsorted(trade_days, today, side = 'left')-1]
     return str(ans)
 
 def next_trade_date(today):
-    # the input is a datetime
+    '''
+    get the earliest trade date x such that today < x
+
+    Parameters
+    ----------
+    today : datetime
+        the desired date for the query.
+
+    Returns
+    -------
+    str
+        that trade date we got.
+
+    '''
     today = today.strftime('%Y%m%d')
     ans = trade_days[np.searchsorted(trade_days, today, side = 'right')]
     return str(ans)
